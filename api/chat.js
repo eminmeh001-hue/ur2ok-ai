@@ -1,6 +1,11 @@
 const handler = async (req, res) => {
+  // Sadece POST isteklerini kabul et
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
   try {
-    const { message } = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { message } = req.body;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -10,14 +15,27 @@ const handler = async (req, res) => {
       },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: message }]
+        messages: [
+          { 
+            role: "system", 
+            content: "Sen yardımsever ve empatik bir asistansın. Sadece Türkçe konuş. Samimi ama saygılı bir dil kullan." 
+          },
+          { role: "user", content: message }
+        ],
+        temperature: 0.7
       })
     });
 
     const data = await response.json();
-    res.status(200).json({ answer: data.choices[0].message.content });
+    
+    if (data.choices && data.choices[0]) {
+      const answer = data.choices[0].message.content;
+      res.status(200).json({ answer });
+    } else {
+      res.status(500).json({ answer: "API'den boş yanıt döndü." });
+    }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ answer: "Sunucu hatası: " + error.message });
   }
 };
 
