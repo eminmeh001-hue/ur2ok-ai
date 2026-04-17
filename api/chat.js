@@ -1,5 +1,7 @@
-export default async function handler(req, res) {
+const handler = async (req, res) => {
   try {
+    const { message } = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -8,18 +10,15 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: req.body.message }]
+        messages: [{ role: "user", content: message }]
       })
     });
 
     const data = await response.json();
-    
-    if (data.choices && data.choices[0]) {
-      res.status(200).json({ answer: data.choices[0].message.content });
-    } else {
-      res.status(500).json({ answer: "Bir hata oluştu, anahtarı kontrol et." });
-    }
+    res.status(200).json({ answer: data.choices[0].message.content });
   } catch (error) {
-    res.status(500).json({ answer: "Sunucu hatası: " + error.message });
+    res.status(500).json({ error: error.message });
   }
-}
+};
+
+module.exports = handler;
